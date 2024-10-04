@@ -23,6 +23,29 @@
 0028 RST_28:
 0028 C3 5B 33     jp SUB_335B
 
+0038 F5           push af
+0039 E5           push hl
+003A 2A 78 5C     ld hl,(DATA_5C78)
+003D 23           inc hl
+003E 22 78 5C     ld (DATA_5C78),hl
+0041 7C           ld a,h
+0042 B5           or l
+0043 20 03        jr nz,LBL_0048
+
+0045 FD 34 40     inc (iy+64)
+
+0048 LBL_0048:
+0048 C5           push bc
+0049 D5           push de
+004A CD BF 02     call SUB_02BF
+
+004D D1           pop de
+004E C1           pop bc
+004F E1           pop hl
+0050 F1           pop af
+0051 FB           ei
+0052 C9           ret
+
 0053 SUB_0053:
 0053 E1           pop hl
 0054 6E           ld l,(hl)
@@ -65,6 +88,269 @@
 0090 37           scf
 0091 22 5D 5C     ld (DATA_5C5D),hl
 0094 C9           ret
+
+028E SUB_028E:
+028E 2E 2F        ld l,2Fh
+0290 11 FF FF     ld de,0FFFFh
+0293 01 FE FE     ld bc,0FEFEh
+
+0296 .LOOP1:
+0296 ED 78        in a,(c)
+0298 2F           cpl
+0299 E6 1F        and 1Fh
+029B 28 0E        jr z,.L1
+
+029D 67           ld h,a
+029E 7D           ld a,l
+
+029F .LOOP2:
+029F 14           inc d
+02A0 C0           ret nz
+
+02A1 .LOOP3:
+02A1 D6 08        sub 08h
+02A3 CB 3C        srl h
+02A5 30 FA        jr nc,.LOOP3
+
+02A7 53           ld d,e
+02A8 5F           ld e,a
+02A9 20 F4        jr nz,.LOOP2
+
+02AB .L1:
+02AB 2D           dec l
+02AC CB 00        rlc b
+02AE 38 E6        jr c,.LOOP1
+
+02B0 7A           ld a,d
+02B1 3C           inc a
+02B2 C8           ret z
+
+02B3 FE 28        cp 28h
+02B5 C8           ret z
+
+02B6 FE 19        cp 19h
+02B8 C8           ret z
+
+02B9 7B           ld a,e
+02BA 5A           ld e,d
+02BB 57           ld d,a
+02BC FE 18        cp 18h
+02BE C9           ret
+
+02BF SUB_02BF:
+02BF CD 8E 02     call SUB_028E
+
+02C2 C0           ret nz
+
+02C3 21 00 5C     ld hl,5C00h
+
+02C6 .LOOP:
+02C6 CB 7E        bit 7,(hl)
+02C8 20 07        jr nz,.L1
+
+02CA 23           inc hl
+02CB 35           dec (hl)
+02CC 2B           dec hl
+02CD 20 02        jr nz,.L1
+
+02CF 36 FF        ld (hl),0FFh
+
+02D1 .L1:
+02D1 7D           ld a,l
+02D2 21 04 5C     ld hl,5C04h
+02D5 BD           cp l
+02D6 20 EE        jr nz,.LOOP
+
+02D8 CD 1E 03     call SUB_031E
+
+02DB D0           ret nc
+
+02DC 21 00 5C     ld hl,5C00h
+02DF BE           cp (hl)
+02E0 28 2E        jr z,.L4
+
+02E2 EB           ex de,hl
+02E3 21 04 5C     ld hl,5C04h
+02E6 BE           cp (hl)
+02E7 28 27        jr z,.L4
+
+02E9 CB 7E        bit 7,(hl)
+02EB 20 04        jr nz,.L2
+
+02ED EB           ex de,hl
+02EE CB 7E        bit 7,(hl)
+02F0 C8           ret z
+
+02F1 .L2:
+02F1 5F           ld e,a
+02F2 77           ld (hl),a
+02F3 23           inc hl
+02F4 36 05        ld (hl),05h
+02F6 23           inc hl
+02F7 3A 09 5C     ld a,(DATA_5C09)
+02FA 77           ld (hl),a
+02FB 23           inc hl
+02FC FD 4E 07     ld c,(iy+7)
+02FF FD 56 01     ld d,(iy+1)
+0302 E5           push hl
+0303 CD 33 03     call SUB_0333
+
+0306 E1           pop hl
+0307 77           ld (hl),a
+
+0308 .L3:
+0308 32 08 5C     ld (DATA_5C08),a
+030B FD CB 01 EE  set 5,(iy+1)
+030F C9           ret
+
+0310 .L4:
+0310 23           inc hl
+0311 36 05        ld (hl),05h
+0313 23           inc hl
+0314 35           dec (hl)
+0315 C0           ret nz
+
+0316 3A 0A 5C     ld a,(DATA_5C0A)
+0319 77           ld (hl),a
+031A 23           inc hl
+031B 7E           ld a,(hl)
+031C 18 EA        jr .L3
+
+031E SUB_031E:
+031E 42           ld b,d
+031F 16 00        ld d,00h
+0321 7B           ld a,e
+0322 FE 27        cp 27h
+0324 D0           ret nc
+
+0325 FE 18        cp 18h
+0327 20 03        jr nz,.L1
+
+0329 CB 78        bit 7,b
+032B C0           ret nz
+
+032C .L1:
+032C 21 05 02     ld hl,0205h
+032F 19           add hl,de
+0330 7E           ld a,(hl)
+0331 37           scf
+0332 C9           ret
+
+0333 SUB_0333:
+0333 7B           ld a,e
+0334 FE 3A        cp 3Ah
+0336 38 2F        jr c,.L5
+
+0338 0D           dec c
+0339 FA 4F 03     jp m,.L3
+
+033C 28 03        jr z,.L1
+
+033E C6 4F        add a,4Fh
+0340 C9           ret
+
+0341 .L1:
+0341 21 EB 01     ld hl,01EBh
+0344 04           inc b
+0345 28 03        jr z,.L2
+
+0347 21 05 02     ld hl,0205h
+
+034A .L2:
+034A 16 00        ld d,00h
+034C 19           add hl,de
+034D 7E           ld a,(hl)
+034E C9           ret
+
+034F .L3:
+034F 21 29 02     ld hl,0229h
+0352 CB 40        bit 0,b
+0354 28 F4        jr z,.L2
+
+0356 CB 5A        bit 3,d
+0358 28 0A        jr z,.L4
+
+035A FD CB 30 5E  bit 3,(iy+48)
+035E C0           ret nz
+
+035F 04           inc b
+0360 C0           ret nz
+
+0361 C6 20        add a,20h
+0363 C9           ret
+
+0364 .L4:
+0364 C6 A5        add a,0A5h
+0366 C9           ret
+
+0367 .L5:
+0367 FE 30        cp 30h
+0369 D8           ret c
+
+036A 0D           dec c
+036B FA 9D 03     jp m,.L8
+
+036E 20 19        jr nz,.L7
+
+0370 21 54 02     ld hl,0254h
+0373 CB 68        bit 5,b
+0375 28 D3        jr z,.L2
+
+0377 FE 38        cp 38h
+0379 30 07        jr nc,.L6
+
+037B D6 20        sub 20h
+037D 04           inc b
+037E C8           ret z
+
+037F C6 08        add a,08h
+0381 C9           ret
+
+0382 .L6:
+0382 D6 36        sub 36h
+0384 04           inc b
+0385 C8           ret z
+
+0386 C6 FE        add a,0FEh
+0388 C9           ret
+
+0389 .L7:
+0389 21 30 02     ld hl,0230h
+038C FE 39        cp 39h
+038E 28 BA        jr z,.L2
+
+0390 FE 30        cp 30h
+0392 28 B6        jr z,.L2
+
+0394 E6 07        and 07h
+0396 C6 80        add a,80h
+0398 04           inc b
+0399 C8           ret z
+
+039A EE 0F        xor 0Fh
+039C C9           ret
+
+039D .L8:
+039D 04           inc b
+039E C8           ret z
+
+039F CB 68        bit 5,b
+03A1 21 30 02     ld hl,0230h
+03A4 20 A4        jr nz,.L2
+
+03A6 D6 10        sub 10h
+03A8 FE 22        cp 22h
+03AA 28 06        jr z,.L9
+
+03AC FE 20        cp 20h
+03AE C0           ret nz
+
+03AF 3E 5F        ld a,5Fh
+03B1 C9           ret
+
+03B2 .L9:
+03B2 3E 40        ld a,40h
+03B4 C9           ret
 
 03B5 SUB_03B5:
 03B5 F3           di
@@ -1530,7 +1816,7 @@
 17BF D5           push de
 17C0 CD 6E 19     call SUB_196E
 
-17C3 11 C0 02     ld de,02C0h
+17C3 11 C0 02     ld de,SUB_02BF+1
 17C6 EB           ex de,hl
 17C7 ED 52        sbc hl,de
 17C9 E3           ex (sp),hl
@@ -4340,6 +4626,12 @@
 
 3804 DATA_3804:
 3804 B2 13 0E...  DEFB B2 13 0E 55 E4 8D 58 39 ; ASCII: ???U??X9
+5C08 DATA_5C08:
+5C08 00           DEFB 00 ; ASCII: ?
+5C09 DATA_5C09:
+5C09 14           DEFB 14 ; ASCII: ?
+5C0A DATA_5C0A:
+5C0A 01           DEFB 01 ; ASCII: ?
 5C0B DATA_5C0B:
 5C0B 00           DEFB 00 ; ASCII: ?
 5C0C DATA_5C0C:
@@ -4413,7 +4705,9 @@
 5C72 DATA_5C72:
 5C72 00 00        DEFB 00 00 ; ASCII: ??
 5C74 DATA_5C74:
-5C74 00 00 00...  DEFB 00 00 00 00 00 00 00 ; ASCII: ???????
+5C74 00 00 00 00  DEFB 00 00 00 00 ; ASCII: ????
+5C78 DATA_5C78:
+5C78 01 00 00     DEFB 01 00 00 ; ASCII: ???
 5C7B DATA_5C7B:
 5C7B 58 FF        DEFB 58 FF ; ASCII: X?
 5C7D DATA_5C7D:
