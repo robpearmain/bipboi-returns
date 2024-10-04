@@ -1,0 +1,48 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "dezog",
+            "request": "launch",
+            "name": "DeZog",
+            "remoteType": "zsim",
+            "zsim": {
+                "Z80N": true,
+                "zxKeyboard": true,
+                "ulaScreen": true,
+                "zxBorderWidth": 20,
+                "visualMemory": true,
+                "cpuLoadInterruptRange": 1,
+                "vsyncInterrupt": true,
+                "cpuFrequency": 3500000.0,
+                "memoryModel": "ZX48K"
+            },
+            "sjasmplus": [
+                {
+                    "path": "main.sld",
+                }
+            ],
+            "startAutomatically": true,
+            "history": {
+                "reverseDebugInstructionCount": 10000,
+                "codeCoverageEnabled": true
+            },
+            "commandsAfterLaunch": [
+                //"-sprites",
+                //"-patterns"
+            ],
+            "disassemblerArgs": {
+                "numberOfLines": 20,
+                "esxdosRst": true
+            },
+            "rootFolder": "${workspaceFolder}/src",
+            "load": "main.sna",
+            "smallValuesMaximum": 513,
+            "tmpDir": ".tmp",
+            "preLaunchTask": "build"
+        }
+    ]
+}
