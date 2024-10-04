@@ -63,50 +63,9 @@ PauseLoop:
     LD A, 0x02             ; Load 2 into A (green color)
     OUT (0xFE), A          ; Set border to green
 
-    LD DE, BBLOGO
-    LD HL, 0x4088
-    LD B, 10
-
-LP1:
-    PUSH BC
-
-    LD B,16
-LP2:
-    LD A,(DE)
-    LD (HL),A
-    INC L
-    INC DE
-    DJNZ LP2
-
-    DEC L
-    INC H
-
-    LD B,16
-
-LP3:
-    LD A,(DE)
-    LD (HL),A
-    INC DE
-    DEC L
-
-   
-
-    DJNZ LP3
-
-    INC L
-
-    CALL DOWN_HL
-   
-  
-
-
-
-
-
-
-    POP BC
-
-    DJNZ LP1
+    LD hl, BBLOGO
+    LD de, $4088
+    call BLIT_SPRITE_16_64
 
     ; Change border to black
     LD A, 0x00              ; Load 0 into A (black color)
@@ -162,6 +121,67 @@ InSegment:
 
 	LD   SP,(SP_Store)
 	RET 
+
+; hl = gfx address
+; de = screen address
+; b = height
+BLIT_SPRITE_16_64
+
+  ld b,64
+
+  ld (.savedsp),sp
+  ld sp,hl
+  ex de,hl
+  ld a,h
+  and $F8
+  ld c,a
+  jr .mainloop
+
+.nextthird:
+  ld c,h
+  djnz .mainloop
+
+  jr .theend
+
+.nextchar:
+  ld a,l
+  add 32
+  ld l,a
+  jr c,.nextthird
+
+  ld h,c
+  dec b
+  jr z,.theend
+
+.mainloop:
+  ld a,l
+
+  DUP 8
+  pop de
+  ld (hl),e
+  inc l
+  ld (hl),d
+  inc l
+  EDUP
+
+  org $-1   ;Remove last inc l
+
+  ld l,a
+  
+  inc h
+  ld a,h
+  and 7
+
+  jr z,.nextchar
+
+  djnz .mainloop
+
+.theend:
+  ld sp,0
+.savedsp equ $-2
+  ret
+
+
 
 SP_Store: defw 0
 
