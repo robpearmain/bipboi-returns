@@ -2,9 +2,16 @@
     device  ZXSPECTRUM48
 
     include "./constants.asm"
+
+Stack_Top:              EQU 0x0000                              ; Stack at top of RAM
+IM2_Table:              EQU 0xFE00                              ; 256 byte page (+ 1 byte) for IM2
+IM2_JP:                 EQU 0xFDFD                              ; 3 bytes for JP routine under IM2 table
+ 
     
     org $8000
 init:
+
+  CALL InitIM2
 
   ;
 ; Print the string TEXT2 using my zero-terminated string print routine
@@ -21,7 +28,7 @@ init:
     LD HL, $5800            ; Start of attribute memory
     LD DE, $5801            ; Next byte in attribute memory
     LD BC, 511           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), 7            ; Bright white on black background
+    LD (HL), %01000111            ; Bright white on black background
     LDIR                    ; Fill the attribute memory
 
   ; Clear Attribute Memory
@@ -38,11 +45,14 @@ init:
     LD (HL), 0x00            ; Load 0 into A (black color)
     LDIR                    ; Fill the screen memory
 
+    
 main:
 
-    EI
-    HALT
-    DI
+
+
+    call VSync
+
+    
 
       ; Clear Border
     LD A, 0x00              ; Load 0 into A (black color)
@@ -185,11 +195,57 @@ BLIT_SPRITE_16_64
 
 SP_Store: defw 0
 
+VSync:
+        ; Important, reset the R register
+    xor a
+    ld r,a
+.lp1
+    ld a,r
+    ret m
+    jr .lp1
+
+
+InitIM2:
+
+  DI
+  LD DE, IM2_Table                        ; The IM2 vector table (on page boundary)
+  LD HL, IM2_JP                           ; Pointer for 3-byte interrupt handler
+  LD A, D                                 ; Interrupt table page high address
+  LD I, A                                 ; Set the interrupt register to that page
+  LD A, L                                 ; Fill page with values
+.lp1                     
+  LD (DE), A 
+  INC E
+  JR NZ,.lp1
+
+  INC D                                   ; In case data bus bit 0 is not 0, we
+  LD (DE), A                              ; put an extra byte in here
+  LD (HL), 0xC3                           ; Write out the interrupt handler, a JP instruction
+  INC L
+  LD (HL), low Interrupt                  ; Store the address of the interrupt routine in
+  INC L
+  LD (HL), high Interrupt
+  IM 2                                    ; Set the interrupt mode
+  EI                                      ; Enable interrupts
+  RET
+
+
+Interrupt:
+	  EI  
+    PUSH AF
+    LD   A,$FF
+    LD   R,A
+    POP  AF
+    RETI
+
+
 BBLOGO:
 
     include "./assets/bblogo.asm"
 
-
+	org $fd00
+data_FD00:
+  DEFS 0x101,0xFF
     
     savesna "./src/main.sna",init
     savetap "./src/main.tap",init
