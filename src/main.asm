@@ -60,7 +60,7 @@ main:
 
 
     ; Pause until 3rd part of screen
-    LD BC, 565           
+    LD BC, 550        
 PauseLoop:
     DEC BC
     LD A, B
@@ -73,9 +73,7 @@ PauseLoop:
     LD A, 0x02             ; Load 2 into A (red color)
     OUT (0xFE), A          ; Set border to red
 
-    LD hl, BBLOGO
-    LD de, $4088
-    call BLIT_SPRITE_16_64
+    call DRAW_BUFFER
 
     ; Change border to black
     LD A, 0x00              ; Load 0 into A (black color)
@@ -237,6 +235,13 @@ Interrupt:
     LD   R,A
     POP  AF
     RETI
+
+
+DRAW_BUFFER:
+    LD hl, BBLOGO
+    LD de, $4088
+    call BLIT_SPRITE_16_64
+    ret
 
 
 BBLOGO:
