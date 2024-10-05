@@ -1,0 +1,31 @@
+# .gitignore for an assembly language project
+
+# Ignore build artifacts
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# Ignore temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+*.code-workspace
+
+dist/
+
+# Ignore macOS specific files
+.DS_Store
+src/main.lst
+src/main.sld
+src/main.sna
+src/main.tap
+src/.tmp/disasm.list

@@ -57,11 +57,11 @@ PauseLoop:
     OR C
     JR NZ, PauseLoop
 
-    CALL ClearScreen
+    CALL ClearPlayScreen  ; Top 2 thirds of screen, 28 columns, 16 rows
 
-    ; Change border to green
-    LD A, 0x02             ; Load 2 into A (green color)
-    OUT (0xFE), A          ; Set border to green
+    ; Change border to red
+    LD A, 0x02             ; Load 2 into A (red color)
+    OUT (0xFE), A          ; Set border to red
 
     LD hl, BBLOGO
     LD de, $4088
@@ -79,15 +79,15 @@ DOWN_HL:        inc h : ld a,h : and 7 : ret nz
                 ret c
                 ld a,h : sub 8 : ld h,a : ret
 
-ClearScreen:
+ClearPlayScreen:
 	LD   (SP_Store),SP
-	LD   DE,$0101
+	LD   DE,$0000      ; Blank character
 	LD   HL,$401E			; start screen address of play area to clear
-	LD   C,$10
-NextRow:
-	LD   B,$08
+	LD   C,$10            ; 16 rows
+.NextRow:
+	LD   B,$08    ; 8 Rows at a time
 
-ClearCharacter:
+.ClearRow:       ; Clear a row of 28 characters allow 2 either side for border
 	LD   SP,HL
 	PUSH DE
 	PUSH DE
@@ -104,20 +104,20 @@ ClearCharacter:
 	PUSH DE
 	PUSH DE
 	INC  H
-	DJNZ ClearCharacter
+	DJNZ .ClearRow
 
 	LD   A,L
 	ADD  A,$20
 	LD   L,A
-	JR   C,InSegment
+	JR   C,.inThird
 
-	LD   A,H
-	SUB  $08
+	LD   A,H        ; Move to next third of screen
+	SUB  $08        
 	LD   H,A
 
-InSegment:
+.inThird:
 	DEC  C
-	JR   NZ,NextRow
+	JR   NZ,.NextRow
 
 	LD   SP,(SP_Store)
 	RET 
