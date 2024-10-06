@@ -35,7 +35,7 @@ init:
     LD HL, $5800+512            ; Start of attribute memory
     LD DE, $5801+512            ; Next byte in attribute memory
     LD BC, 255           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), %01101111            ; Bright white on black background
+    LD (HL), %100110000            ; Bright white on black background
     LDIR    
 
     ; Clear screen memory
@@ -45,6 +45,9 @@ init:
     LD (HL), 0x00            ; Load 0 into A (black color)
     LDIR                    ; Fill the screen memory
 
+  ld hl, BBLOGO
+    ld de, $5208
+    call BLIT_SPRITE_16_64
     
 main:
 
@@ -60,7 +63,7 @@ main:
 
 
     ; Pause until 3rd part of screen
-    LD BC, 550        
+    LD BC, 550       
 PauseLoop:
     DEC BC
     LD A, B
@@ -73,7 +76,72 @@ PauseLoop:
     LD A, 0x02             ; Load 2 into A (red color)
     OUT (0xFE), A          ; Set border to red
 
+
+   
+
     call DRAW_BUFFER
+
+
+    xor a
+
+    ld a,(frame_pause)
+    inc a
+    and 3
+    ld (frame_pause),a
+
+
+
+    jr nz,.go
+
+    ld a,(current_frame)
+  
+    inc a
+    cp 6
+    jr nz, .skip
+
+    xor a
+
+.skip:
+    ld (current_frame),a
+
+    ; Clear the Carry flag so it doesn't affect the next operation
+    and 7
+   
+    ; multiply by 4
+    rl a
+    rl a
+
+    
+    
+  
+
+
+
+
+
+
+    ld hl, BBTABLE
+    ld l,a
+
+    ; Graphics address
+
+    ld a,(hl)
+    ld (DRAW_BUFFER+1),a
+    inc l
+    ld a,(hl)
+    ld (DRAW_BUFFER+2),a
+    inc l
+
+  ; screen pos
+ 
+   ld a,(hl)
+   ld (DRAW_BUFFER+4),a
+     inc l
+   ld a,(hl)
+   ld (DRAW_BUFFER+5),a
+    
+
+.go
 
     ; Change border to black
     LD A, 0x00              ; Load 0 into A (black color)
@@ -135,7 +203,7 @@ ClearPlayScreen:
 ; b = height
 BLIT_SPRITE_16_64
 
-  ld b,64
+  ld b,62
 
   ld (.savedsp),sp
   ld sp,hl
@@ -189,6 +257,97 @@ BLIT_SPRITE_16_64
 .savedsp equ $-2
   ret
 
+; hl = gfx address
+; de = screen address
+; b = height
+
+; only works if moving 2 rows up and down
+BLIT_SPRITE_40_24
+
+  ld b,12
+
+  ld (.savedsp),sp
+  ld sp,hl
+  ex de,hl
+  ld a,h
+  and $F8
+  ld c,a
+  jr .mainloop
+
+.nextthird:
+  ld c,h
+  djnz .mainloop
+
+  jr .theend
+
+.nextchar:
+  ld a,l
+  add 32
+  ld l,a
+  jr c,.nextthird
+
+  ld h,c
+  dec b
+  jr z,.theend
+
+.mainloop:
+  ld a,l
+  ex af,af
+
+  DUP 2
+  pop de
+  ld a,e
+  or (hl)
+  ld (hl),a
+  inc l
+  ld a,d
+  or (hl)
+  ld (hl),a
+  inc l
+  EDUP
+
+  pop de
+
+  ld a,e
+  or (hl)
+  ld (hl),a
+
+  inc h   ; nex row
+
+  ld a,d
+  or (hl)
+  ld (hl),a
+  dec l
+
+  DUP 2
+  pop de
+  ld a,e
+  or (hl)
+  ld (hl),a
+  dec l
+  ld a,d
+  or (hl)
+  ld (hl),a
+  dec l
+  EDUP
+
+  org $-1   ;Remove last dec l
+
+  ex af,af
+  ld l,a
+  
+  inc h
+  ld a,h
+  and 7
+
+  jr z,.nextchar
+
+  djnz .mainloop
+
+.theend:
+  ld sp,0
+.savedsp equ $-2
+  ret
 
 
 SP_Store: defw 0
@@ -237,16 +396,53 @@ Interrupt:
     RETI
 
 
+  align 256
 DRAW_BUFFER:
-    LD hl, BBLOGO
-    LD de, $4088
-    call BLIT_SPRITE_16_64
+    LD hl, bb01
+    LD de, $4408
+    call BLIT_SPRITE_40_24
     ret
+
+current_frame: defb 0
+frame_pause: defb 0
+
+
+  align 256
+; gfx address, screen address
+BBTABLE:
+ ; Frame 1 is 5 chars wide, 3 high but drawn 4 pixels down
+  defw bb01
+  defw $44ED
+  ; Frame 2 is 5 chars wide 3 high but drawn 2 pixel down
+  defw bb02
+  defw $42ED
+  ; Frame 3 is 5 chars wide 3 high but draw 2 pixels down
+  defw bb03
+  defw $42ED
+  ; Frame 4 is 5 chars wide, 3 high and 1 and draw 0 pixel down
+  defw bb04
+  defw $40ED
+  ; Frame 5 is 5 chars wide, 3 hight and drawn 2 pixels down
+  defw bb05
+  defw $42ED
+  ; Frame 6 is 5 chars wide, 3 high and drawn 4 pixels down
+  defw bb06
+  defw $44ED
+
 
 
 BBLOGO:
 
-    include "./assets/bblogo.asm"
+  include "./assets/bblogo.asm"
+
+; Bibpoi facing right frames
+  include "./assets/bipboi/bb01.asm"
+  include "./assets/bipboi/bb02.asm"
+  include "./assets/bipboi/bb03.asm"
+  include "./assets/bipboi/bb04.asm"
+  include "./assets/bipboi/bb05.asm"
+  include "./assets/bipboi/bb06.asm"
+
 
 	org $fd00
 data_FD00:
@@ -254,3 +450,7 @@ data_FD00:
     
     savesna "./src/main.sna",init
     savetap "./src/main.tap",init
+
+
+  ; Notes
+
