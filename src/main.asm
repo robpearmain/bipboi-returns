@@ -28,14 +28,14 @@ init:
     LD HL, $5800            ; Start of attribute memory
     LD DE, $5801            ; Next byte in attribute memory
     LD BC, 511           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), %01000111            ; Bright white on black background
+    LD (HL), BRIGHT+INK_WHITE+PAPER_BLACK            ; Bright white on black background
     LDIR                    ; Fill the attribute memory
 
   ; Clear Attribute Memory
     LD HL, $5800+512            ; Start of attribute memory
     LD DE, $5801+512            ; Next byte in attribute memory
     LD BC, 255           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), %100110000            ; Bright white on black background
+    LD (HL), BRIGHT+PAPER_YELLOW+INK_BLACK           ; Bright white on black background
     LDIR    
 
     ; Clear screen memory

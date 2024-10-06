@@ -1,18 +1,36 @@
-;
-; ROM routine addresses
-;
-ROM_CLS                 EQU  0x0DAF             ; Clears the screen and opens channel 2
-ROM_OPEN_CHANNEL        EQU  0x1601             ; Open a channel
-ROM_PRINT               EQU  0x203C             ; Print a string 
-;
-; PRINT control codes - work with ROM_PRINT and RST 0x10
-;
-INK                     EQU 0x10
-PAPER                   EQU 0x11
-FLASH                   EQU 0x12
-BRIGHT                  EQU 0x13
-INVERSE                 EQU 0x14
-OVER                    EQU 0x15
-AT                      EQU 0x16
-TAB                     EQU 0x17
-CR                      EQU 0x0C
+INK_BLACK               EQU 0
+INK_BLUE                EQU 1
+
+INK_RED                 EQU 2   
+
+INK_MAGENTA             EQU 3
+
+INK_GREEN               EQU 4
+
+INK_CYAN                EQU 5
+
+INK_YELLOW              EQU 6
+
+INK_WHITE              EQU 7
+
+BRIGHT            EQU %01000000
+
+FLASH             EQU %10000000
+
+PAPER_BLACK       EQU %00000000
+
+PAPER_BLUE        EQU %00001000
+
+PAPER_RED         EQU %00010000
+
+PAPER_MAGENTA     EQU %00011000
+
+PAPER_GREEN       EQU %00100000
+
+PAPER_CYAN        EQU %00101000
+
+PAPER_YELLOW      EQU %00110000
+
+PAPER_WHITE       EQU %00111000
+
+
