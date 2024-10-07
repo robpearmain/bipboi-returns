@@ -112,7 +112,7 @@ PauseLoop:
 
     ld a,(frame_pause)
     inc a
-    and 3
+    and 7
     ld (frame_pause),a
 
 
