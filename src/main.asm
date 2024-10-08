@@ -28,7 +28,7 @@ init:
     LD HL, $5800            ; Start of attribute memory
     LD DE, $5801            ; Next byte in attribute memory
     LD BC, 511           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), BRIGHT+INK_WHITE+PAPER_BLACK            ; Bright white on black background
+    LD (HL), BRIGHT+INK_WHITE+PAPER_BLUE            ; Bright white on black background
     LDIR                    ; Fill the attribute memory
 
 
@@ -75,9 +75,62 @@ main:
     LD A, 0x00              ; Load 0 into A (black color)
     OUT (0xFE), A           ; Set border to black
 
+    ld hl,Input_Custom
+    call Read_Controls
 
+    ld b,a              ; store key
+
+
+test_right:
+    BIT 1,a ; check for 'Right' key press
+    jr z,test_left ; Nope, ok test left
+
+    ld a,(baddie_x_pos)  ; 4 Pixels Right
+    add a,-2
+    ld (baddie_x_pos),a  ; Add to Sprite 0 (Player)
+
+    ld hl,BBTABLE
+
+    ld (gfxbase+1),hl
+
+    ; Dont test left, test down
+    jr test_down
+
+test_left:
+    BIT 2,a ; check for 'Left' key press
+    jr z,test_down ; Nope, ok test down
+
+    ld a,(baddie_x_pos)  ; 4 Pixels Left
+    add a,2
+    ld (baddie_x_pos),a  ; Add to Sprite 0 (Player)
+
+    ld hl,BBTABLELEFT
+
+    ld (gfxbase+1),hl
+
+test_down:
+
+    ld a,b
+    
+    BIT 3,a ; check for 'Down' key press
+    jr z,test_up ; Nope, ok test up
+
+    ld a,(baddie_y_pos)  ; 4 Pixels Down
+    add a,-2
+    ld (baddie_y_pos),a  ; Add to Sprite 0 (Player)
+
+    jr wait_for_bottom_third
+test_up:
+    BIT 4,a ; check for 'Up' key press
+    jr z,wait_for_bottom_third ; Nope, ok test fire
+
+    ld a,(baddie_y_pos)  ; 4 Pixels Up
+    add a,2
+    ld (baddie_y_pos),a  ; Add to Sprite 0 (Player)
+
+wait_for_bottom_third:
     ; Pause until 3rd part of screen
-    LD BC, 550       
+    LD BC, 550    
 PauseLoop:
     DEC BC
     LD A, B
@@ -99,8 +152,28 @@ PauseLoop:
     ld a,(baddie_x_pos)
     ld e,a
     call PixAddr
+    ; hl now has screen position
 
-     ld de, block
+    xor a
+    ld a,(baddie_x_pos)
+    and 7
+    rla
+
+
+    ld de,baddie_table
+    ld e,a
+
+    ld a,(de)
+    ex af,af
+    inc e
+    ld a,(de)
+    ld d,a
+    ex af,af
+    ld e,a
+
+    //ld de, block
+    
+    
     ex de,hl
     call BLIT_SPRITE_32_24
 
@@ -117,7 +190,7 @@ PauseLoop:
 
 
 
-    jr nz,.go
+    jp nz,oktogo
 
     ld a,(current_frame)
   
@@ -137,8 +210,10 @@ PauseLoop:
     rl a
     rl a
 
-
+gfxbase:
     ld hl, BBTABLE
+
+    add a,l
     ld l,a
 
     ; Graphics address
@@ -170,7 +245,7 @@ PauseLoop:
    ld (DRAW_BUFFER+5),a
     
   
-.go
+oktogo:
 
   ; ld a,(player_y_pos)
   ;   inc a
@@ -179,12 +254,12 @@ PauseLoop:
   ;   ld (player_y_pos),a
     
     ld a,(baddie_y_pos)
-    dec a
+    ;dec a
     and 127
     ld (baddie_y_pos),a
 
     ld a,(baddie_x_pos)
-    ;add a,-4
+    ;add a,1
     ld (baddie_x_pos),a
     ; Change border to black
     LD A, 0x00              ; Load 0 into A (black color)
@@ -197,6 +272,90 @@ DOWN_HL:        inc h : ld a,h : and 7 : ret nz
                 ld a,l : add a,32 : ld l,a
                 ret c
                 ld a,h : sub 8 : ld h,a : ret
+
+; Read the in-game controls
+; HL: The control map
+; Returns:
+;  A: Input flags - 000UDLRF (Up, Down, Left, Right, Fire)
+; Zero flag set if no key pressed
+;
+Read_Controls:		
+			LD D, 5				; Number of controls to check
+			LD E, 0				; The output flags
+			LD C,0xFE			; Low is always 0xFE for reading keyboard
+Read_Controls1:		
+			LD B,(HL)			; Get the keyboard port address
+			INC HL
+			IN A,(C)			; Read the rows in
+			AND (HL)			; And with the mask
+			JR NZ, Read_Controls2		; Skip if not pressed (bit is 0)
+			SCF				; Set C flag
+Read_Controls2:		
+			RL E				; Rotate the carry flag into E
+			INC HL
+			DEC D
+			JR NZ, Read_Controls1		; Loop
+			LD A,E				; Fetch the key flags
+			AND A				; Check for 0
+			RET				
+
+
+; As Read_Keyboard, but with debounce
+;
+Read_Keyboard_Debounce:	
+			CALL Read_Keyboard		; A debounced versiion - Read the keyboard
+			AND A				; Quick way to do CP 0
+			JR NZ, Read_Keyboard_Debounce	; Loop until key released
+1:			CALL Read_Keyboard		; And second loop reading the keyboard
+			AND A 				; CP 0
+			JR Z, 1B			; Loop until key is pressed
+			RET 
+
+; Read the keyboard and return an ASCII character code
+; Returns:
+;  A: The character code, or 0 if no key pressed
+; BC: The keyboard port (0x7FFE to 0xFEFE)
+;
+Read_Keyboard:		
+            LD HL,Keyboard_Map		; Point HL at the keyboard list
+			LD D,8				; This is the number of ports (rows) to check
+			LD C,0xFE			; Low is always 0xFE for reading keyboard ports
+Read_Keyboard_0:	LD B,(HL)			; Get the keyboard port address
+			INC HL				; Increment to keyboard list of table
+			IN A,(C)			; Read the row of keys in
+			AND 0x1F			; We are only interested in the first five bits
+			LD E,5				; This is the number of keys in the row
+Read_Keyboard_1:	SRL A				; Shift A right; bit 0 sets carry bit
+			JR NC,Read_Keyboard_2		; If the bit is 0, we've found our key
+			INC HL				; Go to next table address
+			DEC E				; Decrement key loop counter
+			JR NZ,Read_Keyboard_1		; Loop around until this row finished
+			DEC D				; Decrement row loop counter
+			JR NZ,Read_Keyboard_0		; Loop around until we are done
+			AND A				; Clear A (no key found)
+			RET
+Read_Keyboard_2:       	
+			LD A,(HL)			; We've found a key at this point; fetch the character code!
+			RET
+
+Keyboard_Map:
+    		DB 0xFE,"#","Z","X","C","V"
+			DB 0xFD,"A","S","D","F","G"
+			DB 0xFB,"Q","W","E","R","T"
+			DB 0xF7,"1","2","3","4","5"
+			DB 0xEF,"0","9","8","7","6"
+			DB 0xDF,"P","O","I","U","Y"
+			DB 0xBF,"#","L","K","J","H"
+			DB 0x7F," ","#","M","N","B"
+
+Input_Custom:		
+			DB 0xFB, %00000001		; Q (Up)
+			DB 0xFD, %00000001		; A (Down)
+			DB 0xDF, %00000010		; O (Left)
+			DB 0xDF, %00000001		; P (Right)
+			DB 0x7F, %00000001		; Space (Fire)
+
+
 
 ClearPlayScreen:
 	LD   (SP_Store),SP
@@ -658,8 +817,48 @@ BBTABLE:
    defb $04    ; 4 pixels down
   defb 24     ; 24 height
 
+BBTABLELEFT:
+
+  defw bbl01
+  defb $04    ; 4 pixels down
+  defb 24     ; 24 height
+
+  ; Frame 2 is 5 chars wide 3 high but drawn 2 pixel down
+  defw bbl02
+   defb $02    ; 2 pixels down
+  defb 24     ; 24 height
+  ; Frame 3 is 5 chars wide 3 high but draw 2 pixels down
+  defw bbl03
+   defb $02    ; 2 pixels down
+  defb 24     ; 24 height
+  ; Frame 4 is 5 chars wide, 3 high and 1 and draw 0 pixel down
+  defw bbl04
+  defb $00    ; 0 pixels down
+  defb 24     ; 24 height
+  ; Frame 5 is 5 chars wide, 3 hight and drawn 2 pixels down
+  defw bbl05
+   defb $02    ; 42 pixels down
+  defb 24     ; 24 height
+  ; Frame 6 is 5 chars wide, 3 high and drawn 4 pixels down
+  defw bbl06
+   defb $04    ; 4 pixels down
+  defb 24     ; 24 height
+
+  align 256
+baddie_table:
+
+  defw block
+  defw block+96
+  defw block+192
+  defw block+288
+  defw block+384
+  defw block+480
+  defw block+576
+  defw block+672
+  
 
 
+  align 256
 BBLOGO:
 
   include "./assets/bblogo.asm"
@@ -671,6 +870,17 @@ BBLOGO:
   include "./assets/bipboi/bb04.asm"
   include "./assets/bipboi/bb05.asm"
   include "./assets/bipboi/bb06.asm"
+
+; Bipboi facing left frames
+
+ include "./assets/bipboi/bbl01.asm"
+  include "./assets/bipboi/bbl02.asm"
+  include "./assets/bipboi/bbl03.asm"
+  include "./assets/bipboi/bbl04.asm"
+  include "./assets/bipboi/bbl05.asm"
+  include "./assets/bipboi/bbl06.asm"
+
+
 
   include "./assets/baddie01/block.asm"
 
