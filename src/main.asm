@@ -38,7 +38,7 @@ init:
     LD HL, $5800+512            ; Start of attribute memory
     LD DE, $5801+512            ; Next byte in attribute memory
     LD BC, 255           ; 6912 bytes to fill (32 columns * 24 rows)
-    LD (HL), BRIGHT+PAPER_YELLOW+INK_BLACK           ; Bright white on black background
+    LD (HL), PAPER_YELLOW+INK_BLUE           ; Bright white on black background
     LDIR    
 
     LD HL,$5800
